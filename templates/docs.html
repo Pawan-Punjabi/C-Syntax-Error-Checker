@@ -1,0 +1,550 @@
+{% extends "base.html" %}
+
+{% block title %}C Syntax Checker - Documentation{% endblock %}
+
+{% block extra_head %}
+<style>
+    .docs-page {
+        display: flex;
+        min-height: calc(100vh - 60px);
+    }
+    .sidebar {
+        width: 280px;
+        background: #0f1720;
+        border-right: 1px solid #2d333b;
+        padding: 24px 0;
+        overflow-y: auto;
+        position: sticky;
+        top: 60px;
+        height: calc(100vh - 60px);
+        flex-shrink: 0;
+    }
+    .sidebar-section {
+        margin-bottom: 8px;
+    }
+    .sidebar-section-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #8892a0;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        cursor: pointer;
+        user-select: none;
+    }
+    .sidebar-section-title:hover {
+        color: #e6eef6;
+    }
+    .sidebar-section-title .toggle-icon {
+        transition: transform 0.2s ease;
+    }
+    .sidebar-section.collapsed .toggle-icon {
+        transform: rotate(-90deg);
+    }
+    .sidebar-section.collapsed .sidebar-items {
+        display: none;
+    }
+    .sidebar-items {
+        padding: 0 8px;
+    }
+    .sidebar-item {
+        display: block;
+        padding: 8px 12px 8px 36px;
+        color: #8892a0;
+        text-decoration: none;
+        font-size: 14px;
+        border-radius: 4px;
+        margin: 2px 0;
+        transition: all 0.15s ease;
+    }
+    .sidebar-item:hover {
+        background: #1a1f26;
+        color: #e6eef6;
+    }
+    .sidebar-item.active {
+        background: #1a1f26;
+        color: #4ec9b0;
+        font-weight: 500;
+    }
+    .docs-content {
+        flex: 1;
+        padding: 32px 48px;
+        max-width: 900px;
+        overflow-y: auto;
+    }
+    .docs-content h1 {
+        font-size: 32px;
+        font-weight: 700;
+        color: #e6eef6;
+        margin-bottom: 24px;
+        line-height: 1.3;
+    }
+    .docs-content h2 {
+        font-size: 24px;
+        font-weight: 700;
+        color: #e6eef6;
+        margin: 32px 0 16px;
+        line-height: 1.4;
+        border-bottom: 1px solid #2d333b;
+        padding-bottom: 8px;
+        scroll-margin-top: 80px;
+    }
+    .docs-content h3 {
+        font-size: 18px;
+        font-weight: 600;
+        color: #e6eef6;
+        margin: 24px 0 12px;
+        scroll-margin-top: 80px;
+    }
+    .docs-content p {
+        font-size: 16px;
+        line-height: 1.6;
+        color: #e6eef6;
+        margin-bottom: 16px;
+    }
+    .docs-content ul, .docs-content ol {
+        margin: 16px 0;
+        padding-left: 24px;
+    }
+    .docs-content li {
+        font-size: 16px;
+        line-height: 1.6;
+        color: #e6eef6;
+        margin-bottom: 8px;
+    }
+    .docs-content code {
+        font-family: 'Monaco', 'Menlo', monospace;
+        font-size: 14px;
+        background: #1a1f26;
+        padding: 2px 6px;
+        border-radius: 4px;
+        color: #ff8c42;
+    }
+    .docs-content pre {
+        background: #1a1f26;
+        border: 1px solid #2d333b;
+        border-radius: 6px;
+        padding: 16px;
+        overflow-x: auto;
+        margin: 16px 0;
+    }
+    .docs-content pre code {
+        background: none;
+        padding: 0;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+    .code-block-wrapper {
+        position: relative;
+    }
+    .copy-code-btn {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: #2d333b;
+        border: none;
+        color: #8892a0;
+        padding: 4px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    .copy-code-btn:hover {
+        background: #4ec9b0;
+        color: #0b0f12;
+    }
+    .example-box {
+        background: var(--bg-hover);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 16px;
+        margin: 16px 0;
+    }
+    .example-correct {
+        border-left: 4px solid var(--accent-secondary);
+    }
+    .example-incorrect {
+        border-left: 4px solid var(--error);
+    }
+    .example-label {
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+    }
+    .example-correct .example-label {
+        color: #4ec9b0;
+    }
+    .example-incorrect .example-label {
+        color: #f44747;
+    }
+    .example-code {
+        font-family: 'Monaco', 'Menlo', monospace;
+        font-size: 14px;
+        color: #d4d4d4;
+    }
+    .sidebar-toggle {
+        display: none;
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: #ff8c42;
+        color: #0b0f12;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(255, 140, 66, 0.3);
+        z-index: 100;
+    }
+    .back-to-compiler {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #4ec9b0;
+        text-decoration: none;
+        font-size: 14px;
+        margin-bottom: 24px;
+        transition: color 0.15s ease;
+    }
+    .back-to-compiler:hover {
+        color: #ff8c42;
+    }
+    @media (max-width: 1024px) {
+        .sidebar {
+            position: fixed;
+            left: -280px;
+            top: 60px;
+            height: calc(100vh - 60px);
+            z-index: 50;
+            transition: left 0.3s ease;
+        }
+        .sidebar.open {
+            left: 0;
+        }
+        .sidebar-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            top: 60px;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 40;
+        }
+        .sidebar-overlay.open {
+            display: block;
+        }
+    }
+    @media (max-width: 640px) {
+        .docs-content {
+            padding: 24px 16px;
+        }
+        .docs-content h1 {
+            font-size: 24px;
+        }
+        .docs-content h2 {
+            font-size: 20px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="docs-page">
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-section">
+            <div class="sidebar-section-title" data-section="home">
+                <span class="toggle-icon">v</span>
+                <span>Home</span>
+            </div>
+            <div class="sidebar-items">
+                <a href="#introduction" class="sidebar-item">Introduction</a>
+                <a href="#features" class="sidebar-item">Features</a>
+            </div>
+        </div>
+        <div class="sidebar-section">
+            <div class="sidebar-section-title" data-section="errors">
+                <span class="toggle-icon">v</span>
+                <span>Error Types</span>
+            </div>
+            <div class="sidebar-items">
+                <a href="#invalid-variable-name" class="sidebar-item">Invalid Variable Name</a>
+                <a href="#missing-semicolon" class="sidebar-item">Missing Semicolon</a>
+                <a href="#unclosed-quote" class="sidebar-item">Unclosed Quote</a>
+                <a href="#unclosed-bracket" class="sidebar-item">Unclosed Bracket</a>
+                <a href="#keyword-typo" class="sidebar-item">Keyword Typo</a>
+                <a href="#missing-include" class="sidebar-item">Missing Include</a>
+                <a href="#include-error" class="sidebar-item">Include Error</a>
+                <a href="#missing-return-type" class="sidebar-item">Missing Return Type</a>
+                <a href="#invalid-operator" class="sidebar-item">Invalid Operator</a>
+                <a href="#mismatched-bracket" class="sidebar-item">Mismatched Bracket</a>
+            </div>
+        </div>
+        <div class="sidebar-section">
+            <div class="sidebar-section-title" data-section="faq">
+                <span class="toggle-icon">v</span>
+                <span>FAQ</span>
+            </div>
+            <div class="sidebar-items">
+                <a href="#faq-how-it-works" class="sidebar-item">How It Works</a>
+                <a href="#faq-limitations" class="sidebar-item">Limitations</a>
+            </div>
+        </div>
+        <div class="sidebar-section">
+            <div class="sidebar-section-title" data-section="about">
+                <span class="toggle-icon">v</span>
+                <span>About</span>
+            </div>
+            <div class="sidebar-items">
+                <a href="#about" class="sidebar-item">About</a>
+            </div>
+        </div>
+        <div style="padding: 16px;">
+            <a href="/" class="btn btn-secondary" style="width: 100%; text-align: center;">
+                Back to Compiler
+            </a>
+        </div>
+    </aside>
+    <div class="docs-content">
+        <a href="/" class="back-to-compiler">Back to Compiler</a>
+
+        <h1 id="introduction">C Syntax Checker Documentation</h1>
+        <p>Welcome to the C Syntax Checker. This tool helps you identify common syntax errors in your C code before compilation.</p>
+
+        <h2 id="features">Features</h2>
+        <ul>
+            <li>Instant syntax validation</li>
+            <li>Detailed error messages with line numbers</li>
+            <li>Suggestions for fixing errors</li>
+            <li>Sample code for testing</li>
+            <li>Dark theme for comfortable coding</li>
+        </ul>
+
+        <h2 id="invalid-variable-name">Invalid Variable Name</h2>
+        <h3>What It Is</h3>
+        <p>Variables that don't follow C naming conventions. Valid names must:</p>
+        <ul>
+            <li>Start with a letter or underscore</li>
+            <li>Contain only letters, digits, and underscores</li>
+            <li>Not start with a digit</li>
+            <li>Not contain special characters</li>
+        </ul>
+
+        <h3>Detection Method</h3>
+        <div class="code-block-wrapper">
+            <button class="copy-code-btn">Copy</button>
+            <pre><code>def is_valid_identifier(name: str) -> bool:
+    return re.match(r'^[A-Za-z_][A-Za-z0-9_]*$', name) is not None</code></pre>
+        </div>
+
+        <h3>Examples</h3>
+        <div class="example-box example-incorrect">
+            <div class="example-label">Incorrect</div>
+            <div class="example-code">int 1var = 5;  // starts with digit</div>
+        </div>
+        <div class="example-box example-incorrect">
+            <div class="example-label">Incorrect</div>
+            <div class="example-code">int my-var = 5;  // contains hyphen</div>
+        </div>
+        <div class="example-box example-correct">
+            <div class="example-label">Correct</div>
+            <div class="example-code">int myVar = 5;</div>
+        </div>
+        <div class="example-box example-correct">
+            <div class="example-label">Correct</div>
+            <div class="example-code">int _private = 10;</div>
+        </div>
+
+        <h3>How To Fix It</h3>
+        <p>Rename variables following the valid naming rules above.</p>
+
+        <hr style="border: none; border-top: 1px solid #2d333b; margin: 48px 0;">
+
+        <h2 id="missing-semicolon">Missing Semicolon</h2>
+        <h3>What It Is</h3>
+        <p>Statements without a terminating semicolon. In C, most statements require a semicolon to mark the end.</p>
+
+        <h3>When Required</h3>
+        <ul>
+            <li>After declarations</li>
+            <li>After assignments</li>
+            <li>After return statements</li>
+            <li>After function calls (not control structures)</li>
+        </ul>
+
+        <h3>Detection Method</h3>
+        <div class="code-block-wrapper">
+            <button class="copy-code-btn">Copy</button>
+            <pre><code>if (('=' in s or s.startswith('return')) and
+    not s.endswith(';') and
+    not s.endswith('{') and
+    not s.endswith('}')):
+    if not re.match(r'^(if|for|while|switch)\b', s):
+        errors.append({...})</code></pre>
+        </div>
+
+        <h3>How To Fix It</h3>
+        <p>Add a semicolon at the end of the statement.</p>
+
+        <hr style="border: none; border-top: 1px solid #2d333b; margin: 48px 0;">
+
+        <h2 id="unclosed-quote">Unclosed Quote</h2>
+        <h3>What It Is</h3>
+        <p>String or character literals that are not properly closed with a matching quote.</p>
+
+        <h3>Examples</h3>
+        <div class="example-box example-incorrect">
+            <div class="example-label">Incorrect</div>
+            <div class="example-code">char *s = "hello;</div>
+        </div>
+        <div class="example-box example-correct">
+            <div class="example-label">Correct</div>
+            <div class="example-code">char *s = "hello";</div>
+        </div>
+
+        <h3>How To Fix It</h3>
+        <p>Add the closing quote character.</p>
+
+        <hr style="border: none; border-top: 1px solid #2d333b; margin: 48px 0;">
+
+        <h2 id="unclosed-bracket">Unclosed Bracket</h2>
+        <h3>What It Is</h3>
+        <p>Parentheses, braces, or square brackets that are not properly closed.</p>
+
+        <h3>Detection Method</h3>
+        <p>Uses a stack-based approach to track opening and closing brackets.</p>
+
+        <h3>How To Fix It</h3>
+        <p>Add the matching closing bracket.</p>
+
+        <hr style="border: none; border-top: 1px solid #2d333b; margin: 48px 0;">
+
+        <h2 id="keyword-typo">Keyword Typo</h2>
+        <h3>What It Is</h3>
+        <p>C keywords that are misspelled (within one edit distance of a valid keyword).</p>
+
+        <h3>Detection Method</h3>
+        <p>Uses fuzzy matching to detect keywords that are one edit away from valid C keywords.</p>
+
+        <h3>Examples</h3>
+        <div class="example-box example-incorrect">
+            <div class="example-label">Incorrect</div>
+            <div class="example-code">Infinate x = 0;  // "Infinate" instead of "int"</div>
+        </div>
+        <div class="example-box example-correct">
+            <div class="example-label">Correct</div>
+            <div class="example-code">int x = 0;</div>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid #2d333b; margin: 48px 0;">
+
+        <h2 id="missing-include">Missing Include</h2>
+        <h3>What It Is</h3>
+        <p>Required header files that are not included.</p>
+
+        <h3>Common Cases</h3>
+        <ul>
+            <li>Using <code>printf</code>/<code>scanf</code> without <code>#include &lt;stdio.h&gt;</code></li>
+        </ul>
+
+        <h3>How To Fix It</h3>
+        <div class="example-box example-correct">
+            <div class="example-label">Correct</div>
+            <div class="example-code">#include &lt;stdio.h&gt;</div>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid #2d333b; margin: 48px 0;">
+
+        <h2 id="include-error">Include Error</h2>
+        <h3>What It Is</h3>
+        <p>Incorrect syntax in include directives, such as adding a semicolon after the include statement.</p>
+
+        <h3>Example</h3>
+        <div class="example-box example-incorrect">
+            <div class="example-label">Incorrect</div>
+            <div class="example-code">#include &lt;stdio.h&gt;;  // extra semicolon</div>
+        </div>
+        <div class="example-box example-correct">
+            <div class="example-label">Correct</div>
+            <div class="example-code">#include &lt;stdio.h&gt;</div>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid #2d333b; margin: 48px 0;">
+
+        <h2 id="missing-return-type">Missing Return Type</h2>
+        <h3>What It Is</h3>
+        <p>Functions (especially <code>main</code>) declared without a return type.</p>
+
+        <h3>Example</h3>
+        <div class="example-box example-incorrect">
+            <div class="example-label">Incorrect</div>
+            <div class="example-code">main() { return 0; }</div>
+        </div>
+        <div class="example-box example-correct">
+            <div class="example-label">Correct</div>
+            <div class="example-code">int main() { return 0; }</div>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid #2d333b; margin: 48px 0;">
+
+        <h2 id="invalid-operator">Invalid Operator</h2>
+        <h3>What It Is</h3>
+        <p>Using operators that are not valid in C expressions.</p>
+
+        <h3>Valid Operators</h3>
+        <ul>
+            <li>Arithmetic: <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>%</code></li>
+            <li>Assignment: <code>=</code>, <code>+=</code>, <code>-=</code>, etc.</li>
+            <li>Comparison: <code>==</code>, <code>!=</code>, <code>&lt;</code>, <code>&gt;</code>, etc.</li>
+        </ul>
+
+        <hr style="border: none; border-top: 1px solid #2d333b; margin: 48px 0;">
+
+        <h2 id="mismatched-bracket">Mismatched Bracket</h2>
+        <h3>What It Is</h3>
+        <p>Closing brackets that don't match their corresponding opening brackets.</p>
+
+        <h3>Example</h3>
+        <div class="example-box example-incorrect">
+            <div class="example-label">Incorrect</div>
+            <div class="example-code">if (x > 0]  // mismatched bracket</div>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid #2d333b; margin: 48px 0;">
+
+        <h2 id="faq-how-it-works">How It Works</h2>
+        <p>The C Syntax Checker uses a combination of regex pattern matching and heuristic analysis to detect common syntax errors. It is not a full parser but catches the most frequent mistakes developers make.</p>
+
+        <h2 id="faq-limitations">Limitations</h2>
+        <ul>
+            <li>Does not perform full semantic analysis</li>
+            <li>Cannot detect logic errors</li>
+            <li>May miss some complex syntax issues</li>
+            <li>Not a substitute for a proper compiler</li>
+        </ul>
+
+        <hr style="border: none; border-top: 1px solid #2d333b; margin: 48px 0;">
+
+        <h2 id="about">About</h2>
+        <p>C Syntax Checker is a lightweight tool designed to help C programmers quickly identify and fix common syntax errors. It provides instant feedback without requiring compilation.</p>
+        <p>This tool is built with Python and uses Flask for the web interface.</p>
+    </div>
+    <button class="sidebar-toggle" id="sidebarToggle">MENU</button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/docs.js') }}"></script>
+{% endblock %}
