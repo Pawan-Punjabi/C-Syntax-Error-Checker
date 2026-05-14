@@ -92,7 +92,21 @@ int main() {
             </div>
         `;
 
-        // Make API call
+        // Check if we are running on GitHub Pages (static) or with a Flask backend
+        if (window.isGitHubPages && window.runCheckPython) {
+            // Use PyScript logic for GitHub Pages
+            try {
+                const resultsJson = window.runCheckPython(code);
+                const errors = JSON.parse(resultsJson);
+                displayResults(errors);
+            } catch (err) {
+                console.error('PyScript Error:', err);
+                showNotification('Python engine is still loading or encountered an error.', 'error');
+            }
+            return;
+        }
+
+        // Standard API call for local Flask development
         fetch('/api/check', {
             method: 'POST',
             headers: {

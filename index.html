@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C Syntax Checker - Compiler</title>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/monokai.min.css">
+    
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+    
+    <!-- PyScript for GitHub Pages Support -->
+    <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css">
+    <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+    
+    <style>
+        .editor-panel { display: flex; flex-direction: column; height: 100%; }
+        .editor-toolbar { display: flex; gap: 8px; padding: 12px 16px; background: #1a1f26; border-bottom: 1px solid #2d333b; flex-wrap: wrap; }
+        .editor-container { flex: 1; position: relative; min-height: 300px; }
+        .CodeMirror { height: 100%; font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; font-size: 14px; }
+        .results-panel { background: #0f1720; }
+        .results-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #1a1f26; border-bottom: 1px solid #2d333b; }
+        .results-title { display: flex; align-items: center; gap: 8px; }
+        .error-count { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 0 8px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+        .error-count.success { background: #4ec9b0; color: #0b0f12; }
+        .error-count.error { background: #f44747; color: #fff; }
+        .error-count.warning { background: #dcdcaa; color: #0b0f12; }
+        .results-content { padding: 16px; overflow-y: auto; max-height: calc(100vh - 200px); }
+        .error-card { background: var(--bg-hover); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 12px; cursor: pointer; transition: all 0.2s ease; }
+        .error-card:hover { border-color: var(--accent-secondary); background: #1f252d; }
+        .error-card.critical { border-left: 4px solid var(--error); }
+        .error-card.warning { border-left: 4px solid var(--warning); }
+        .error-card.info { border-left: 4px solid var(--info); }
+        .error-card-header { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-bottom: 1px solid var(--border); }
+        .error-type-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 2px 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.1); }
+        .error-card.critical .error-type-tag { color: var(--error); background: rgba(244, 71, 71, 0.1); }
+        .error-card.warning .error-type-tag { color: var(--warning); background: rgba(220, 220, 170, 0.1); }
+        .error-card.info .error-type-tag { color: var(--info); background: rgba(86, 156, 214, 0.1); }
+        .error-type { font-weight: 600; color: var(--text-primary); flex: 1; margin-left: 8px; }
+        .error-line { color: var(--text-secondary); font-size: 12px; }
+        .error-card-body { padding: 12px; }
+        .error-message { color: var(--text-primary); font-size: 14px; margin-bottom: 8px; }
+        .error-code { background: var(--bg-primary); padding: 8px 12px; border-radius: 4px; font-family: var(--font-code); font-size: 13px; color: var(--text-code); overflow-x: auto; border: 1px solid var(--border); }
+        .no-errors { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px; color: #4ec9b0; }
+        .no-errors-icon { margin-bottom: 16px; }
+        .no-errors-text { font-size: 18px; font-weight: 600; }
+        .editor-actions { display: flex; gap: 8px; margin-top: 12px; padding: 12px 16px; background: #1a1f26; border-top: 1px solid #2d333b; }
+        .editor-info { display: flex; align-items: center; gap: 16px; margin-left: auto; font-size: 12px; color: #8892a0; }
+        .mobile-toolbar { display: none; }
+        @media (max-width: 768px) {
+            .editor-toolbar { display: none; }
+            .mobile-toolbar { display: flex; gap: 8px; padding: 12px; background: #1a1f26; border-bottom: 1px solid #2d333b; flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <a href="index.html" class="logo">
+                <span class="logo-icon">C</span>
+                <span class="logo-text">Syntax Checker</span>
+            </a>
+            <nav class="nav">
+                <a href="index.html" class="nav-link active">Compiler</a>
+                <a href="docs_static.html" class="nav-link">Docs</a>
+            </nav>
+            <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="compiler-page">
+            <div class="panels-container">
+                <div class="editor-panel">
+                    <div class="mobile-toolbar">
+                        <button class="btn btn-secondary" id="mobileImportBtn">Import</button>
+                        <button class="btn btn-secondary" id="mobileClearBtn">Clear</button>
+                        <button class="btn btn-secondary" id="mobileSampleBtn">Sample</button>
+                        <button class="btn btn-primary" id="mobileCheckBtn">Check Code</button>
+                    </div>
+                    <div class="editor-toolbar">
+                        <button class="btn btn-secondary" id="importBtn">Import .c</button>
+                        <button class="btn btn-secondary" id="clearBtn">Clear</button>
+                        <div class="dropdown">
+                            <button class="btn btn-secondary dropdown-toggle" id="sampleBtn">Load Sample</button>
+                            <div class="dropdown-menu" id="sampleMenu">
+                                <button class="dropdown-item" data-sample="good1">Valid Code</button>
+                                <button class="dropdown-item" data-sample="good2">Function Example</button>
+                                <button class="dropdown-item" data-sample="bad1">Invalid Variables</button>
+                                <button class="dropdown-item" data-sample="bad2">Unclosed Quotes</button>
+                                <button class="dropdown-item" data-sample="bad3">Keyword Typo</button>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" id="checkBtn">Check Code <span class="shortcut">Ctrl+Enter</span></button>
+                        <div class="editor-info">
+                            <span>Syntax: C</span>
+                            <span>Dark Theme</span>
+                            <span id="pyscript-status" style="color: #ff8c42;">Loading Python...</span>
+                        </div>
+                    </div>
+                    <div class="editor-container">
+                        <textarea id="codeEditor"></textarea>
+                        <input type="file" id="fileInput" accept=".c" style="display: none;">
+                    </div>
+                    <div class="editor-actions">
+                        <button class="btn btn-secondary" id="copyBtn">Copy</button>
+                        <button class="btn btn-secondary" id="downloadBtn">Download .c</button>
+                    </div>
+                </div>
+                <div class="results-panel">
+                    <div class="results-header">
+                        <div class="results-title">
+                            <span>Error Results</span>
+                            <span class="error-count" id="errorCount" style="display: none;">0</span>
+                        </div>
+                        <button class="btn btn-secondary btn-small" id="downloadReportBtn" style="display: none;">Download Report</button>
+                    </div>
+                    <div class="results-content" id="resultsContent">
+                        <div class="no-errors">
+                            <div class="no-errors-icon" style="font-size: 24px; font-weight: bold; border: 2px solid; border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">OK</div>
+                            <div class="no-errors-text">No errors detected</div>
+                            <p style="color: #8892a0; margin-top: 8px;">Enter C code and click "Check Code"</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>C Syntax Checker &copy; 2026 | Running in Browser (PyScript)</p>
+    </footer>
+
+    <!-- Python Logic Integration -->
+    <script type="py" src="./checker.py" config='{"packages": ["difflib"]}'></script>
+    
+    <script type="py">
+        from pyodide.ffi import create_proxy
+        from checker import find_syntax_errors
+        import js
+        import json
+
+        def run_check_python(code):
+            try:
+                errors = find_syntax_errors(code)
+                return json.dumps(list(errors))
+            except Exception as e:
+                return json.dumps([{"line": 0, "type": "Python Error", "message": str(e)}])
+
+        # Expose to JS
+        js.window.runCheckPython = create_proxy(run_check_python)
+        js.document.getElementById('pyscript-status').textContent = 'Python Ready'
+        js.document.getElementById('pyscript-status').style.color = '#4ec9b0'
+    </script>
+
+    <script src="static/js/compiler.js"></script>
+    <script>
+        // Override the checkCode function to use PyScript when on GitHub Pages
+        window.isGitHubPages = true;
+    </script>
+</body>
+</html>
