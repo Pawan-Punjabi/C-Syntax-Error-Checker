@@ -92,21 +92,46 @@ int main() {
             </div>
         `;
 
-        // Check if we are running on GitHub Pages (static) or with a Flask backend
-        if (window.isGitHubPages && window.runCheckPython) {
-            // Use PyScript logic for GitHub Pages
-            try {
-                const resultsJson = window.runCheckPython(code);
-                const errors = JSON.parse(resultsJson);
-                displayResults(errors);
-            } catch (err) {
-                console.error('PyScript Error:', err);
-                showNotification('Python engine is still loading or encountered an error.', 'error');
+        // Detection: Are we on GitHub Pages or a local file?
+        const isStaticMode = window.isGitHubPages || 
+                           window.location.hostname.includes('github.io') || 
+                           window.location.protocol === 'file:';
+
+        if (isStaticMode) {
+            if (window.runCheckPython) {
+                // Use PyScript logic
+                try {
+                    const resultsJson = window.runCheckPython(code);
+                    const errors = JSON.parse(resultsJson);
+                    displayResults(errors);
+                } catch (err) {
+                    console.error('PyScript Error:', err);
+                    resultsContent.innerHTML = `
+                        <div class="no-errors" style="color: #f44747;">
+                            <div class="no-errors-icon">ERROR</div>
+                            <div class="no-errors-text">Python Engine Error</div>
+                            <p style="color: #8892a0; margin-top: 8px;">${err.message}</p>
+                        </div>
+                    `;
+                }
+            } else {
+                // Python still loading
+                resultsContent.innerHTML = `
+                    <div class="loading">
+                        <div class="spinner" style="border-top-color: #ff8c42;"></div>
+                        <span style="color: #ff8c42;">Loading Python engine...</span>
+                    </div>
+                    <p style="text-align: center; color: #8892a0; font-size: 13px; margin-top: 8px;">
+                        The first check takes a few seconds to load the Python environment.
+                    </p>
+                `;
+                // Try again in a second
+                setTimeout(checkCode, 1000);
             }
             return;
         }
 
-        // Standard API call for local Flask development
+        // Standard API call for local Flask development (only if not in static mode)
         fetch('/api/check', {
             method: 'POST',
             headers: {
