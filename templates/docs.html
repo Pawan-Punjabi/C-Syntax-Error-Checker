@@ -422,6 +422,10 @@
         <h2 id="unclosed-bracket">Unclosed Bracket</h2>
         <h3>What It Is</h3>
         <p>Parentheses, braces, or square brackets that are not properly closed.</p>
+        <div class="example-box">
+            <div class="example-label">Visual Reference</div>
+            <img src="{{ url_for('static', filename='images/Unclosed_Bracket.png') }}" alt="Unclosed Bracket Example" style="max-width: 100%; border-radius: 4px; margin-top: 8px;">
+        </div>
 
         <h3>Detection Method</h3>
         <p>Uses a stack-based approach to track opening and closing brackets.</p>
@@ -515,6 +519,7 @@
         <h2 id="mismatched-bracket">Mismatched Bracket</h2>
         <h3>What It Is</h3>
         <p>Closing brackets that don't match their corresponding opening brackets.</p>
+
 
         <h3>Example</h3>
         <div class="example-box example-incorrect">
